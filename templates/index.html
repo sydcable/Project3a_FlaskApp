@@ -10,11 +10,12 @@
             background-color: #f3f3f3
         }
 
-        nav a {
-            color: #d64161;
-            font-size: 3em;
-            margin-left: 50px;
-            text-decoration: none;
+        .card {
+            background-color: #ffff;
+            text-align: left;
+            content: left;
+            margin: 5px;
+            
         }
 
         .alert {
@@ -26,26 +27,24 @@
     </style>
 </head>
 <body>
-    {% for symbol in symbols %}
-        <div class='post'>
-
-        </div>
-    {% endfor %}
     <hr>
     <form method="POST">
+    <div class="card">
         <label>Choose Symbol</label>
-        <select id="symbol" name="symbol" reqired>
-            <option>Select Symbol</option>
-            {% for stock in stocks %}
-            <option>{symbol}</option>
+        <select id="symbol" name="symbol" required>
+            <option value="">Select Symbol</option>
+            {% for symbol in stocks %}
+                <option value="{{ symbol }}">{{ symbol }}</option>
             {% endfor %}
         </select>
+        <br>        
         <label>Choose Chart Type</label>
         <select id="chart" name="chart" reqired>
             <option>Select Chart Type</option>
             <option>Bar</option>
             <option>Line</option>
         </select>
+        <br>
         <label>Choose Time Series</label>
         <select id="time_series" name="time_series" reqired>
             <option>Select Time Series</option>
@@ -54,13 +53,16 @@
             <option>Weekly</option>
             <option>Monthly</option>
         </select>
+        <br>
         <label>Input Start Date</label>
         <input type="date" id="start_input" name="start_input" reqired>
+        <br>
         <label>Input End Date</label>
         <input type="date" id="end_input" name="end_input" reqired>
+        <br>
         <button type="submit">Generate Chart</button>
 
-        {% if chart_url %} 
+        {% if chart %} 
             <h2>Chart:</h2> 
             <img src="{{ url_for('static', filename=chart.split('/')[-1]) }}" alt="Stock chart">
         {% endif %}
@@ -72,5 +74,6 @@
         {% endfor %}
         {% block content %} {% endblock %}
     </div>
+    </div>  
 </body>
 </html>

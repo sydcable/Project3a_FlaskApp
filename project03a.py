@@ -1,4 +1,6 @@
 import requests
+import matplotlib 
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import sys
 import pandas as pd
@@ -11,6 +13,7 @@ app.config["DEBUG"] = True
 app.config['SECRET_KEY'] = 'your seceret key'
 
 def get_stock_symbols(): 
+    stocks = []
     df = pd.read_csv('stocks.csv') 
     return df['Symbol'].tolist()
 
@@ -54,7 +57,7 @@ def index():
     stocks = get_stock_symbols()
     selected_symbol = None
     chart_type = None
-    plot_data = None
+    ##plot_data = None
     time_series = None
     start_input = None
     end_input = None
@@ -62,32 +65,35 @@ def index():
 
     # API and Time Series Function
     if request.method == 'POST':
-        selected_symbol = request.form['symbol']
+        selected_symbol = request.form.get('symbol')
         if not selected_symbol:
             flash("Stock selection required")
-        chart_type=request.form['chart']
+        chart_type=request.form.get('chart')
         if not chart_type:
             flash("Chart type required")
-        time_series = request.form['time_series']
+        time_series = request.form.get('time_series')
         if not time_series:
             flash("Time series required")
         
         if time_series == "Intraday":
             url = f"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={selected_symbol}&interval=5min&apikey=2O7W9WY18QMH3DXR"
+            ts_key= "Time Series (5min)"
         elif time_series == "Daily":
             url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={selected_symbol}&apikey=2O7W9WY18QMH3DXR"
+            ts_key= "Time Series (Daily)"
         elif time_series == "Weekly":
             url = f"https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol={selected_symbol}&apikey=2O7W9WY18QMH3DXR"
+            ts_key= "Weekly Time Series"
         elif time_series == "Monthly":
             url = f"https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol={selected_symbol}&apikey=2O7W9WY18QMH3DXR"
+            ts_key= "Monthly Time Series"
         
-        start_input = request.form['start_input']
-        if not start_input:
-            flash("Start date required")
+        start_input = request.form.get('start_input')
+        end_input = request.form.get('end_input')
+        if not start_input or not end_input:
+            flash("Start and end date required")
+
         start_date = datetime.strptime(start_input, "%Y-%m-%d")
-        end_input = request.form['end_input']
-        if not end_input:
-            flash("End date required")
         end_date = datetime.strptime(end_input, "%Y-%m-%d")
         if end_date < start_date:
             flash("End date cannot be before start date.")
@@ -110,7 +116,9 @@ def index():
         if not chart:
             flash("No valid time series data found.")
             return redirect('index')
+        
+        return render_template('index.html', stocks=stocks, chart=chart)
 
-        return render_template('index.html', symbol=stocks, chart_type=chart_type, time_series=time_series, start_date=start_date, end_date=end_date, chart=chart)
+    return render_template('index.html', stocks=stocks, chart=None)
 
 app.run(port=5008)
