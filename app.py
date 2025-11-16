@@ -175,4 +175,4 @@ def index():
 
     return render_template('index.html', stocks=stocks, chart=None)
 
-app.run(port=5008)
+app.run(host="0.0.0.0")
