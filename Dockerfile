@@ -8,10 +8,10 @@ WORKDIR /app
 COPY . /app
 
 #upgrade pip 
-Run pip install --upgrade pip
+RUN pip install --upgrade pip
 
 #install any needed packages
-Run pip install --no-cashe-dir -r requirements.txt
+RUN pip install --no-cashe-dir -r requirements.txt
 
 #set default commands to run when starting the container
 CMD ["python", "app.py"]
