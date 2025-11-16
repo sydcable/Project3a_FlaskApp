@@ -11,7 +11,7 @@ COPY . /app
 RUN pip install --upgrade pip
 
 #install any needed packages
-RUN pip install --no-cashe-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 #set default commands to run when starting the container
 CMD ["python", "app.py"]
