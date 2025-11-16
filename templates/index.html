@@ -45,7 +45,7 @@
                 <option value="{{ symbol }}">{{ symbol }}</option>
             {% endfor %}
         </select>
-        <br>        
+        <br>
         <label>Choose Chart Type</label>
         <select id="chart" name="chart" reqired>
             <option>Select Chart Type</option>
@@ -71,8 +71,10 @@
         <button type="submit">Generate Chart</button>
 
         {% if chart %} 
-            <h2>Chart:</h2> 
-            <img src="{{ url_for('static', filename=chart.split('/')[-1]) }}" alt="Stock chart">
+        <div class="chart-container">
+            <h2>{{selected_stock}}'s Stock Data</h2>
+            <embed type="image/svg+xml" src="{{ chart_svg }}" />
+        </div>        
         {% endif %}
 
     </form>

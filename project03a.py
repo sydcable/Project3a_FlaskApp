@@ -1,8 +1,8 @@
+import pygal
 import requests
 import matplotlib 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import pygal
 import pandas as pd
 from datetime import datetime
 from flask import Flask, render_template, request, url_for, flash, redirect, abort
@@ -33,13 +33,13 @@ def filter_data(time_series, start_date, end_date):
             except ValueError:
                 continue
 
-        if start_date <= date <= end_date:
+        if not (start_date <= date <= end_date):
             continue
         try:
-            open_val = float(values.get("1. open" or values.get("open")))
-            high_val = float(values.get("2. high" or values.get("high")))
-            low_val = float(values.get("3. low" or values.get("low")))
-            close_val = float(values.get("4. close" or values.get("close")))
+            open_val = float(values.get("1. open") or values.get("open"))
+            high_val = float(values.get("2. high") or values.get("high"))
+            low_val = float(values.get("3. low") or values.get("low"))
+            close_val = float(values.get("4. close") or values.get("close"))
         except Exception:
             continue
 
@@ -85,26 +85,14 @@ def plot_data(data, symbol, chart_type):
         chart.add("Close", close_data)
         return chart
 
-    plt.figure(figsize=(10, 5))
-    plt.plot(sorted_dates, close_data, label="Close")
-    plt.title(f"{symbol} Closing Prices")
-    plt.xlabel("Date")
-    plt.ylabel("Price")
-    plt.grid(True)
-
-    filename = f"static/{symbol}_chart.png"
-    plt.savefig(filename)
-    plt.close()
-
-    return filename
 
 @app.route('/', methods=('GET', 'POST'))
 def index():
     
     stocks = get_stock_symbols()
+    chart= None
     selected_symbol = None
     chart_type = None
-    ##plot_data = None
     time_series = None
     start_input = None
     end_input = None
@@ -113,14 +101,22 @@ def index():
     # API and Time Series Function
     if request.method == 'POST':
         selected_symbol = request.form.get('symbol')
+        chart_type=request.form.get('chart')
+        time_series = request.form.get('time_series')
+        start_input = request.form.get('start_input')
+        end_input = request.form.get('end_input')
+
         if not selected_symbol:
             flash("Stock selection required")
-        chart_type=request.form.get('chart')
+            return render_template('index.html', stocks=stocks, chart=None)
+
         if not chart_type:
             flash("Chart type required")
-        time_series = request.form.get('time_series')
+            return render_template('index.html', stocks=stocks, chart=None)
+
         if not time_series:
             flash("Time series required")
+            return render_template('index.html', stocks=stocks, chart=None)
         
         if time_series == "Intraday":
             url = f"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={selected_symbol}&interval=5min&apikey=2O7W9WY18QMH3DXR"
@@ -135,16 +131,21 @@ def index():
             url = f"https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol={selected_symbol}&apikey=2O7W9WY18QMH3DXR"
             ts_key= "Monthly Time Series"
         
-        start_input = request.form.get('start_input')
-        end_input = request.form.get('end_input')
+
         if not start_input or not end_input:
             flash("Start and end date required")
+            return render_template('index.html', stocks=stocks, chart=None)
 
-        start_date = datetime.strptime(start_input, "%Y-%m-%d")
-        end_date = datetime.strptime(end_input, "%Y-%m-%d")
+        try:
+            start_date = datetime.strptime(start_input, "%Y-%m-%d")
+            end_date = datetime.strptime(end_input, "%Y-%m-%d")
+        except ValueError:
+            flash("Invalid date format. Use YYYY-MM-DD.")
+            return render_template("index.html", stocks=stocks, chart=None)
+
         if end_date < start_date:
             flash("End date cannot be before start date.")
-            return redirect(url_for('index'))
+            return redirect(url_for('index.html', stocks=stocks, chart=None))
             
         r = requests.get(url)
         data = r.json()
@@ -164,7 +165,8 @@ def index():
             flash("No valid time series data found.")
             return redirect('index')
         
-        return render_template('index.html', stocks=stocks, chart=chart)
+        chart_svg = chart.render_data_uri()
+        return render_template("index.html", stocks=stocks, chart=chart_svg, selected_symbol=selected_symbol, chart_type=chart_type, time_series=time_series, start_date=start_date, end_date=end_date)
 
     return render_template('index.html', stocks=stocks, chart=None)
 
