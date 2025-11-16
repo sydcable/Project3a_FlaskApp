@@ -1,6 +1,7 @@
 import requests
 import matplotlib.pyplot as plt
 import sys
+import pandas as pd
 from datetime import datetime
 from flask import Flask, render_template, request, url_for, flash, redirect, abort
 
@@ -9,18 +10,10 @@ app = Flask(__name__)
 app.config["DEBUG"] = True
 app.config['SECRET_KEY'] = 'your seceret key'
 
-def get_chart_type(choice):
-    chart_types = {
-        "1": "bar",
-        "2": "line"
-    }
-    return chart_types.get(choice, None)
+def get_stock_symbols(): 
+    df = pd.read_csv('stocks.csv') 
+    return df['Symbol'].tolist()
 
-def extract_time_series(data):
-    for key in data.keys():
-        if "Time Series" in key:
-            return data[key]
-    return None
 
 def filter_data(time_series, start_date, end_date):
     filtered = {}
@@ -53,51 +46,64 @@ def plot_data (data, symbol, chart_type):
 @app.route('/', methods=('GET', 'POST'))
 def index():
     
-    selected_symbol = request.form['symbol']
-    chart_
+    stocks = get_stock_symbols()
+    selected_symbol = None
+    chart_type = None
+    plot_data = None
+    time_series = None
+    start_input = None
+    end_input = None
     
 
     # API and Time Series Function
-    def get_api_data(symbol, function):
-    if function == "Intradaily":
-        url = f"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={symbol}&interval=5min&apikey=2O7W9WY18QMH3DXR"
-    elif function == "Daily":
-        url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey=2O7W9WY18QMH3DXR"
-    elif function == "Weekly":
-        url = f"https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol={symbol}&apikey=2O7W9WY18QMH3DXR"
-    elif function == "Monthly":
-        url = f"https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol={symbol}&apikey=2O7W9WY18QMH3DXR"
-    
-    response = requests.get(url)
-    data = response.json()
-    return data
-
+    if request.method == 'POST':
+        selected_symbol = request.form['symbol']
+        if not selected_symbol:
+            flash("Stock selection required")
+        chart_type=request.form['chart']
+        if not chart_type:
+            flash("Chart type required")
+        time_series = request.form['time_series']
+        if not time_series:
+            flash("Time series required")
+        
+        if time_series == "Intraday":
+            url = f"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={symbol}&interval=5min&apikey=2O7W9WY18QMH3DXR"
+        elif time_series == "Daily":
+            url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey=2O7W9WY18QMH3DXR"
+        elif time_series == "Weekly":
+            url = f"https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol={symbol}&apikey=2O7W9WY18QMH3DXR"
+        elif time_series == "Monthly":
+            url = f"https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol={symbol}&apikey=2O7W9WY18QMH3DXR"
+        
+    start_input = request.form['start_input']
+    if not start_input:
+        flash("Start date required")
     start_date = datetime.strptime(start_input, "%Y-%m-%d")
-    end_date = datetime.strptime(end_input, "%Y-%m-%d")
+    end_input = request.form['end_input']
+    if not end_input:
+        flash("End date required")
+    end_date = datetime.strptime(start_input, "%Y-%m-%d")
     if end_date < start_date:
-        alert("End date cannot be before start date.")
+        flash("End date cannot be before start date.")
+        return redirect(url_for('index'))
             
-    except ValueError:
-        print("Invalid date format. Use YYYY-MM-DD.")
+    r = requests.get(url)
+    data = r.json()
         
 
     # Fetch and process data
     data = get_api_data(symbol, function)
     time_series = extract_time_series(data)
     if not time_series:
-        print("Could not retrieve time series data. Check symbol.")
+        flash("Could not retrieve time series data. Check symbol.")
         return
 
     filtered_data = filter_data(time_series, start_date, end_date)
     if not filtered_data:
-        print("No data available for the selected date range.")
+        flash("No data available for the selected date range.")
         return
 
     plot_data(filtered_data, symbol, chart_type)
 
-    # Ask to continue or exit
-    if not ask_yes_no("Would you like to view more stock data? (y/n): "):
-        print("Exiting program.")
-        sys.exit(0)
-
-    return render_template('index.html', symbol=symbol)
+    return render_template('index.html', symbol=selected_symbol, )
