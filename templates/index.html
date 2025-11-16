@@ -32,6 +32,40 @@
         </div>
     {% endfor %}
     <hr>
+    <form method="POST">
+        <label>Choose Symbol</label>
+        <select id="symbol" name="symbol" reqired>
+            <option>Select Symbol</option>
+            {% for stock in stocks %}
+            <option>{symbol}</option>
+            {% endfor %}
+        </select>
+        <label>Choose Chart Type</label>
+        <select id="chart" name="chart" reqired>
+            <option>Select Chart Type</option>
+            <option>Bar</option>
+            <option>Line</option>
+        </select>
+        <label>Choose Time Series</label>
+        <select id="time_series" name="time_series" reqired>
+            <option>Select Time Series</option>
+            <option>Intraday</option>
+            <option>Daily</option>
+            <option>Weekly</option>
+            <option>Monthly</option>
+        </select>
+        <label>Input Start Date</label>
+        <input type="date" id="start_input" name="start_input" reqired>
+        <label>Input End Date</label>
+        <input type="date" id="end_input" name="end_input" reqired>
+        <button type="submit">Generate Chart</button>
+
+        {% if chart_url %} 
+            <h2>Chart:</h2> 
+            <img src="{{ url_for('static', filename=chart.split('/')[-1]) }}" alt="Stock chart">
+        {% endif %}
+
+    </form>
     <div class="content">
         {% for message in get_flashed_messages() %}
             <div class="alert">{{message}}</div>

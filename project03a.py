@@ -26,22 +26,27 @@ def filter_data(time_series, start_date, end_date):
             filtered[date] = float(values["4. close"])
     return dict(sorted(filtered.items()))
 
-def plot_data (data, symbol, chart_type):
-    dates = list (data.keys())
-    prices = list (data.values())
+def plot_data(data, symbol, chart_type):
+    dates = list(data.keys())
+    prices = list(data.values())
 
-    plt.figure(figsize=(10,5))
+    plt.figure(figsize=(10, 5))
+    
     if chart_type == "bar":
-        plt.bar(dates, prices, color='skyblue')
+        plt.bar(dates, prices)
     else:
-        plt.plot(dates, prices, color='orange')
-
+        plt.plot(dates, prices)
+    
     plt.title(f"{symbol} Stock Prices")
     plt.xlabel("Date")
     plt.ylabel("Closing Price (USD)")
     plt.tight_layout()
-    plt.save()
 
+    filename = f"static/{symbol}_chart.png"
+    plt.savefig(filename)
+    plt.close() 
+
+    return filename
 
 @app.route('/', methods=('GET', 'POST'))
 def index():
@@ -68,42 +73,44 @@ def index():
             flash("Time series required")
         
         if time_series == "Intraday":
-            url = f"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={symbol}&interval=5min&apikey=2O7W9WY18QMH3DXR"
+            url = f"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={selected_symbol}&interval=5min&apikey=2O7W9WY18QMH3DXR"
         elif time_series == "Daily":
-            url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey=2O7W9WY18QMH3DXR"
+            url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={selected_symbol}&apikey=2O7W9WY18QMH3DXR"
         elif time_series == "Weekly":
-            url = f"https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol={symbol}&apikey=2O7W9WY18QMH3DXR"
+            url = f"https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol={selected_symbol}&apikey=2O7W9WY18QMH3DXR"
         elif time_series == "Monthly":
-            url = f"https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol={symbol}&apikey=2O7W9WY18QMH3DXR"
+            url = f"https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol={selected_symbol}&apikey=2O7W9WY18QMH3DXR"
         
-    start_input = request.form['start_input']
-    if not start_input:
-        flash("Start date required")
-    start_date = datetime.strptime(start_input, "%Y-%m-%d")
-    end_input = request.form['end_input']
-    if not end_input:
-        flash("End date required")
-    end_date = datetime.strptime(start_input, "%Y-%m-%d")
-    if end_date < start_date:
-        flash("End date cannot be before start date.")
-        return redirect(url_for('index'))
+        start_input = request.form['start_input']
+        if not start_input:
+            flash("Start date required")
+        start_date = datetime.strptime(start_input, "%Y-%m-%d")
+        end_input = request.form['end_input']
+        if not end_input:
+            flash("End date required")
+        end_date = datetime.strptime(end_input, "%Y-%m-%d")
+        if end_date < start_date:
+            flash("End date cannot be before start date.")
+            return redirect(url_for('index'))
             
-    r = requests.get(url)
-    data = r.json()
-        
+        r = requests.get(url)
+        data = r.json()
 
-    # Fetch and process data
-    data = get_api_data(symbol, function)
-    time_series = extract_time_series(data)
-    if not time_series:
-        flash("Could not retrieve time series data. Check symbol.")
-        return
+        if ts_key not in data:
+            flash("API returned no time series data.")
+            return redirect(url_for("index"))
 
-    filtered_data = filter_data(time_series, start_date, end_date)
-    if not filtered_data:
-        flash("No data available for the selected date range.")
-        return
+        filtered = filter_data(data[ts_key], start_date, end_date)
+        if not filtered:
+            flash("No data in selected date range.")
+            return redirect(url_for("index"))
 
-    plot_data(filtered_data, symbol, chart_type)
+        # Generate chart
+        chart = plot_data(filtered, selected_symbol, chart_type)
+        if not chart:
+            flash("No valid time series data found.")
+            return redirect('index')
 
-    return render_template('index.html', symbol=selected_symbol, )
+        return render_template('index.html', symbol=stocks, chart_type=chart_type, time_series=time_series, start_date=start_date, end_date=end_date, chart=chart)
+
+app.run(port=5008)
