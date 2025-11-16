@@ -1,8 +1,5 @@
 import pygal
 import requests
-import matplotlib 
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime
 from flask import Flask, render_template, request, url_for, flash, redirect, abort
@@ -145,10 +142,18 @@ def index():
 
         if end_date < start_date:
             flash("End date cannot be before start date.")
-            return redirect(url_for('index.html', stocks=stocks, chart=None))
+            return redirect(url_for('index', stocks=stocks, chart=None))
             
         r = requests.get(url)
         data = r.json()
+
+        if "Error Message" in data:
+            flash("Invalid stock symbol.")
+            return redirect(url_for("index"))
+
+        if "Note" in data:
+            flash("API rate limit reached. Wait 1 minute.")
+            return redirect(url_for("index"))
 
         if ts_key not in data:
             flash("API returned no time series data.")
