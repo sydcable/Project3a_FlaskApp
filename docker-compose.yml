@@ -11,4 +11,4 @@ services:
     volumes:
       - .:/app
     environment:
-      - FLASK_DEBUG = "1"
+      FLASK_DEBUG="1"
